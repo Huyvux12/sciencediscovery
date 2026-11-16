@@ -1523,6 +1523,12 @@ export async function executeShell(
 
   const maxWorkspaceBytes = resolveQuotaBytes(request.maxWorkspaceBytes, config.maxWorkspaceBytes, "maxWorkspaceBytes");
   const maxOutputBytes = resolveQuotaBytes(request.maxOutputBytes, config.maxOutputBytes, "maxOutputBytes");
+  // Shell turns use the starter scientific environment by default. This keeps
+  // python/python3 in run_shell aligned with the managed NumPy/SciPy runtime;
+  // an explicit environment revision still wins and preserves existing behavior.
+  const shellRuntime = runtime ?? (!request.environmentId && environmentStore?.capability.available
+    ? environmentStore.resolveRuntime(undefined, "python")
+    : undefined);
   const workspaceRoot = await validatedWorkspace(config.dataDir, request.workspaceRoot, config.extraWorkspaceRoots);
   await assertWorkspaceWithinQuota(workspaceRoot, maxWorkspaceBytes);
   const readOnlyWorkspaceRoot = request.readOnlyWorkspaceRoot
@@ -1535,12 +1541,12 @@ export async function executeShell(
   const localPythonPackages = await localPythonPackagePath(config);
   const workspaceBinds = workspaceBindArguments(workspaceRoot, readOnlyWorkspaceRoot);
   const sandbox = executorSandboxKind(config);
-  const actualEnvironmentRevisionId = runtime?.revision.id ?? (sandbox === "seatbelt"
+  const actualEnvironmentRevisionId = shellRuntime?.revision.id ?? (sandbox === "seatbelt"
     ? SYSTEM_SHELL_SEATBELT_ENVIRONMENT_REVISION_ID : SYSTEM_SHELL_ENVIRONMENT_REVISION_ID);
   if (expectedEnvironmentRevisionId !== undefined && actualEnvironmentRevisionId !== expectedEnvironmentRevisionId) {
     throw new Error("RECOVERY_ENVIRONMENT_CHANGED");
   }
-  if (request.environmentId && runtime?.environment.id !== request.environmentId) {
+  if (request.environmentId && shellRuntime?.environment.id !== request.environmentId) {
     throw new Error("Selected environment requires an active Runner environment lease");
   }
   let chdir = await resolveProfileChdir(envProfile, workspaceBinds, workspaceRoot, readOnlyWorkspaceRoot);
@@ -1560,16 +1566,16 @@ export async function executeShell(
     npu,
     chdir,
     egress: await prepareSandboxEgress(config.dataDir, networkAccess, gateways, sandbox, request.sandboxEgressProxy),
-    environmentBinds: runtime ? environmentPrefixBindArguments(runtime.prefixPath) : localPythonPackageBindArguments(localPythonPackages),
-    environmentPaths: runtime ? [runtime.prefixPath] : localPythonPackages ? [localPythonPackages] : [],
+    environmentBinds: shellRuntime ? environmentPrefixBindArguments(shellRuntime.prefixPath) : localPythonPackageBindArguments(localPythonPackages),
+    environmentPaths: shellRuntime ? [shellRuntime.prefixPath] : localPythonPackages ? [localPythonPackages] : [],
     envProfile,
     hostInterpreterMasks: [],
     hostRuntimeSupport,
     language: "shell",
-    pathEnv: runtime
-      ? `${sandbox === "seatbelt" ? resolve(runtime.prefixPath, "bin") : "/opt/science-env/bin"}:/usr/bin:/bin`
+    pathEnv: shellRuntime
+      ? `${sandbox === "seatbelt" ? resolve(shellRuntime.prefixPath, "bin") : "/opt/science-env/bin"}:/usr/bin:/bin`
       : "/usr/bin:/bin",
-    pythonPathEnv: !runtime && localPythonPackages
+    pythonPathEnv: !shellRuntime && localPythonPackages
       ? (sandbox === "seatbelt" ? localPythonPackages : LOCAL_PYTHON_PACKAGES_MOUNT)
       : undefined,
     readOnlyWorkspaceRoot,

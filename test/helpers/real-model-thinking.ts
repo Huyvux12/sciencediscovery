@@ -13,7 +13,7 @@ export function realModelApiVariant(env = process.env): ModelApiVariant {
 
 /** One policy for the registered generator and its session, including background searches. */
 export function realModelThinking(env = process.env): { thinkingMode: ModelThinkingMode; thinkingEffort: ModelThinkingEffort } {
-  const mode = env.E2E_LLM_THINKING_MODE?.trim() || "enabled";
+  const mode = env.E2E_LLM_THINKING_MODE?.trim() || "disabled";
   const effort = env.E2E_LLM_THINKING_EFFORT?.trim() || "low";
   if (!["auto", "enabled", "disabled"].includes(mode)) throw new Error("Invalid E2E_LLM_THINKING_MODE");
   if (!["low", "medium", "high", "xhigh", "max"].includes(effort)) throw new Error("Invalid E2E_LLM_THINKING_EFFORT");

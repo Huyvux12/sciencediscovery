@@ -128,7 +128,7 @@ jobs:
       E2E_LLM_MODEL: ${{ vars.E2E_LLM_MODEL }}
       E2E_LLM_TOKEN: ${{ secrets.E2E_LLM_TOKEN }}
       E2E_LLM_API_VARIANT: ${{ vars.E2E_LLM_API_VARIANT || 'deepseek' }}
-      E2E_LLM_THINKING_MODE: ${{ matrix.biomni_case != '' && 'enabled' || vars.E2E_LLM_THINKING_MODE || 'enabled' }}
+      E2E_LLM_THINKING_MODE: ${{ matrix.biomni_case != '' && 'enabled' || vars.E2E_LLM_THINKING_MODE || 'disabled' }}
       E2E_LLM_THINKING_EFFORT: ${{ matrix.biomni_case != '' && 'low' || vars.E2E_LLM_THINKING_EFFORT || 'low' }}
       BIOMNI_JUDGE_THINKING_MODE: ${{ matrix.biomni_case != '' && 'enabled' || vars.BIOMNI_JUDGE_THINKING_MODE || 'enabled' }}
       BIOMNI_JUDGE_THINKING_EFFORT: ${{ matrix.biomni_case != '' && 'low' || vars.BIOMNI_JUDGE_THINKING_EFFORT || 'low' }}
